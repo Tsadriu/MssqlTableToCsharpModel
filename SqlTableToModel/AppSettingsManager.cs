@@ -13,10 +13,24 @@ namespace SqlTableToModel
         private static AppSettingsJson AppSettings = new AppSettingsJson();
         public static SqlConnection SqlConnection { get; private set; } = null!;
 
-        public static async Task CheckAppSettings(bool useDefaultSettings = false)
+        public static async Task CheckAppSettings(string source, bool useDefaultSettings = false)
         {
             if (File.Exists(AppSettingsFullFileName))
             {
+                return;
+            }
+
+            if (source.ToUpper() == "ENET")
+            {
+                var appSettingsJson = new AppSettingsVariablesJson
+                {
+                    DataSource = "sqlenet.picosys.eu,1435",
+                    InitialCatalog = "IMPORT",
+                    UserId = "imp_enet",
+                    Password = "CELO3NmYp9cbKUcV4Kba",
+                };
+
+                AppSettings.Data.Add(appSettingsJson);
                 return;
             }
 

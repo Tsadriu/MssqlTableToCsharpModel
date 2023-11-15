@@ -32,19 +32,28 @@ namespace SqlTableToModel.Helpers
         /// This method creates a C# model from a given DataTable.
         /// </summary>
         /// <param name="table">The DataTable to convert to a C# model.</param>
-        /// <param name="tableName">The name of the table.</param>
+        /// <param name="schemaTable">The name of the table.</param>
         /// <returns>Returns a string representation of the C# model.</returns>
-        public static string CreateCsharpModel(DataTable table, string tableName)
+        public static string CreateCsharpModel(DataTable table, string schemaTable)
         {
-            string modelClass = $"using System.Data;{NewLine}{NewLine}";
+            string tableName = schemaTable.Split('.')[1];
+            string schemaName = schemaTable.Split('.')[0];
+            
+            string modelClass = $"using System.Data;{NewLine}";
+            modelClass += $"using System.ComponentModel.DataAnnotations.Schema;{NewLine}{NewLine}";
+            modelClass += $"/// <summary>{NewLine}";
+            modelClass += $"/// Represents a data table object for the {schemaTable} table.{NewLine}";
+            modelClass += $"/// </summary>{NewLine}";
+            modelClass += $"[Table(\"{tableName}\", Schema = \"{schemaName}\")]{NewLine}";
             modelClass += $"public class {tableName}{NewLine}{{{NewLine}";
             for (int index = 0; index < table.Rows.Count; index++)
             {
                 DataRow row = table.Rows[index];
+                bool allowNull = (bool)row["AllowDBNull"];
                 modelClass += $"{Tab}/// <summary>{NewLine}";
                 modelClass += $"{Tab}/// Gets or sets the {row["ColumnName"]}.{NewLine}";
                 modelClass += $"{Tab}/// </summary>{NewLine}";
-                modelClass += $"{Tab}public {ConvertSqlTypeToCSharp($"{row["DataTypeName"]}", (bool)row["AllowDBNull"])} {row["ColumnName"]} {{ get; set; }}{NewLine}";
+                modelClass += $"{Tab}public {ConvertSqlTypeToCSharp($"{row["DataTypeName"]}", allowNull)} {row["ColumnName"]} {{ get; set; }}{NewLine}";
 
                 if (index + 1 < table.Rows.Count)
                 {

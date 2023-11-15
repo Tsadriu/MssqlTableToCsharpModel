@@ -7,25 +7,37 @@ static class Program
 {
     public static async Task Main()
     {
-        await AppSettingsManager.CheckAppSettings(false);
+        await AppSettingsManager.CheckAppSettings("enet");
         await AppSettingsManager.ConnectToDatabase();
-        string schemaTable = "sem.Files";
-
         // DataTable dt = await AppSettingsManager.SqlConnection.GetSchemaAsync("Tables");
-
-        string modelClass = string.Empty;
-        await using (SqlCommand command = AppSettingsManager.SqlConnection.CreateCommand())
+        List<string> tablesToGather = new List<string>()
         {
-            command.CommandText = $"SELECT TOP 0 * FROM {schemaTable}";
+            "heren.ApiCurrencies",
+            "heren.ApiMarkets",
+            "heren.ApiPeriods",
+            "heren.ApiProducts",
+            "heren.ApiProductSpecifications",
+            "heren.ApiUnits",
+        };
 
-            await using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SchemaOnly))
+        for (int i = 0; i < tablesToGather.Count; i++)
+        {
+            var schemaTable = tablesToGather[i];
+            string modelClass = string.Empty;
+            await using (SqlCommand command = AppSettingsManager.SqlConnection.CreateCommand())
             {
-                DataTable tableSchema = reader.GetSchemaTable() !;
-                modelClass = ModelCreatorHelper.CreateCsharpModel(tableSchema, schemaTable.Split('.')[1]);
+                command.CommandText = $"SELECT TOP 0 * FROM {schemaTable}";
+
+                await using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SchemaOnly))
+                {
+                    DataTable tableSchema = reader.GetSchemaTable() !;
+                    modelClass = ModelCreatorHelper.CreateCsharpModel(tableSchema, schemaTable);
+                }
             }
+            bool useMeAsABreakPoint = default;
+            await ModelCreatorHelper.SaveModelClass(modelClass, schemaTable.Split('.')[1]);
         }
-        bool useMeAsABreakPoint = default;
-        await ModelCreatorHelper.SaveModelClass(modelClass, schemaTable.Split('.')[1]);
+
         await AppSettingsManager.SqlConnection.CloseAsync();
     }
 }
